@@ -1,4 +1,4 @@
 [submodule "libvgm"]
 	path = libvgm
 	url = https://github.com/drhelius/libvgm.git
-	branch = web-vgm-player
+	branch = master
