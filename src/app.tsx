@@ -399,10 +399,15 @@ export function App() {
               {track && track.chips.length > 0 ? (
                 <ul>
                   {track.chips.map((chip, index) => (
-                    <li key={`${chip.name}-${index}`}>
+                    <li
+                      class={track.metadata.system.trim() === '' ? 'chip-without-system' : undefined}
+                      key={`${chip.name}-${index}`}
+                    >
                       <span class="chip-index">{(index + 1).toString().padStart(2, '0')}</span>
                       <span class="chip-name">{chip.name}</span>
-                      <span class="chip-core">{chip.core}</span>
+                      {track.metadata.system.trim() !== '' && (
+                        <span class="chip-system" title={track.metadata.system}>{track.metadata.system}</span>
+                      )}
                       <span class="chip-clock">{formatClock(chip.clock)}</span>
                     </li>
                   ))}

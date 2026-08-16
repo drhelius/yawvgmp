@@ -489,6 +489,10 @@ input[type="range"]::-moz-range-thumb {
   border-top: 1px solid rgba(37, 51, 55, 0.72);
 }
 
+.chips li.chip-without-system {
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+}
+
 .chip-index {
   color: var(--dim);
 }
@@ -500,12 +504,16 @@ input[type="range"]::-moz-range-thumb {
   white-space: nowrap;
 }
 
-.chip-core {
+.chip-system {
+  max-width: 180px;
+  overflow: hidden;
   padding: 1px 4px;
   border: 1px solid #364548;
   color: var(--amber);
   font-size: 0.61rem;
+  text-overflow: ellipsis;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .chip-clock {
