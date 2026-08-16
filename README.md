@@ -143,11 +143,11 @@ These commands use the pinned `libvgm/` submodule. Pass `-DYAWVGMP_LIBVGM_SOURCE
 
 For release qualification, use representative SN76489, YM2612, YM2151, AY-3-8910, Game Boy, NES, Mikey, PCM/sample, multi-chip, and VGZ tracks. Compare rendered duration and deterministic PCM hashes with native `vgm2wav` at 44.1, 48, and 96 kHz. Also test pause/resume, seeks, loop endings, long tracks, replacement loads, hidden tabs, high-DPI/mobile layouts, reduced motion, and browser audio resume behavior. Test files and any required ROMs are intentionally not distributed here.
 
-## Static Apache hosting/Apache deployment
+## Static Apache deployment
 
-Run `./build-web.sh`, then upload the **contents** of `dist/` to the desired Apache hosting directory. The output consists only of HTML, CSS, JavaScript, WASM, and `.htaccess`.
+Run `./build-web.sh`, then upload the **contents** of `dist/` to the selected Apache web directory. The output consists only of HTML, CSS, JavaScript, WASM, and `.htaccess`.
 
-For example, upload every file inside `dist/` to the selected Apache hosting web directory using SFTP, SCP, rsync, or the Apache hosting file manager. Do not upload `node_modules/`, `build/`, the libvgm submodule, or the TypeScript sources. Opening the deployed `index.html` needs no PHP, Node.js process, database, rewrite rule, or cross-origin isolation.
+For example, upload every file inside `dist/` using SFTP, SCP, rsync, or a web hosting file manager. Do not upload `node_modules/`, `build/`, the libvgm submodule, or the TypeScript sources. Opening the deployed `index.html` needs no PHP, Node.js process, database, rewrite rule, or cross-origin isolation.
 
 The included `.htaccess`:
 
@@ -158,7 +158,7 @@ The included `.htaccess`:
 - prevents stale `index.html` deployments
 - disables directory listings
 
-If Apache hosting does not permit one of those directives, remove only the rejected block. No rewrite rules are required.
+If the host does not permit one of those directives, remove only the rejected block. No rewrite rules are required.
 
 ## Known limitations
 
