@@ -296,7 +296,7 @@ export function App() {
           <header class="player-header">
             <div class="brand" aria-label="YAWVGMP, based on libvgm">
               <span class="brand-mark">YAWVGMP</span>
-              <span>Based on <a class="brand-link" href="https://github.com/ValleyBell/libvgm">libvgm</a></span>
+              <span>Based on <a class="brand-link" href="https://github.com/ValleyBell/libvgm" target="_blank" rel="noopener noreferrer">libvgm</a></span>
             </div>
             <div class={`state state-${state}`} role="status" aria-live="polite">
               <span class="state-light" />
