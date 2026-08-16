@@ -1,0 +1,27 @@
+{
+  "name": "yawvgmp",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "setup": "./scripts/setup-libvgm.sh",
+    "dev": "vite",
+    "wasm": "./scripts/build-wasm.sh",
+    "build": "tsc --noEmit && vite build",
+    "build:all": "./scripts/build-all.sh",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "./scripts/clean.sh"
+  },
+  "dependencies": {
+    "lucide-preact": "^1.31.0",
+    "preact": "^10.29.8"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.10.6",
+    "typescript": "^5.9.3",
+    "vite": "^8.2.1",
+    "vitest": "^4.1.10"
+  }
+}
