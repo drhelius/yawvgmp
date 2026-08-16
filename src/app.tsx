@@ -412,7 +412,7 @@ export function App() {
           </div>
 
           <footer class="player-footer">
-            <span>LOCAL PROCESSING / NO UPLOADS</span>
+            <span>Yet Another Web VGM Player</span>
             <span>{engineStats || 'WASM AUDIO ENGINE'}</span>
           </footer>
         </section>

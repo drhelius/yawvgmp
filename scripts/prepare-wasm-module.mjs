@@ -6,4 +6,8 @@ if (inputPath === undefined || outputPath === undefined) {
 }
 
 const source = await readFile(inputPath, 'utf8');
-await writeFile(outputPath, `const self = globalThis;\n${source}`);
+const workletSource = source.replaceAll('import.meta.url', "globalThis.location?.href ?? ''");
+if (workletSource === source) {
+  throw new Error('The Emscripten module did not contain the expected import.meta.url references.');
+}
+await writeFile(outputPath, workletSource);
