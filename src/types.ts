@@ -43,7 +43,7 @@ export interface LoadedTrack {
 }
 
 export type WorkletRequest =
-  | { type: 'init'; wasmModuleUrl: string; wasmBinary: ArrayBuffer; sampleRate: number }
+  | { type: 'init'; wasmBinary: ArrayBuffer; sampleRate: number }
   | { type: 'load'; filename: string; data: ArrayBuffer }
   | { type: 'play' }
   | { type: 'pause' }

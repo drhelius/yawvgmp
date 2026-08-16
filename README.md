@@ -67,7 +67,7 @@ Run commands from the repository root:
 
 ```sh
 npm run setup       # initialize the libvgm submodule
-npm run wasm        # build libvgm.js and libvgm.wasm
+npm run wasm        # build the bundled WASM glue and libvgm.wasm
 npm run dev         # start the Vite development server
 npm test            # run frontend tests once
 npm run build       # type-check and build the static frontend
@@ -91,7 +91,7 @@ npm test
 
 - `libvgm/`: pinned libvgm Git submodule; do not copy it into `dist/`
 - `wasm/`: browser C ABI, in-memory loaders, and Emscripten target
-- `src/`: Preact UI, AudioWorklet, Web Audio integration, and Canvas background
+- `src/`: Preact UI, AudioWorklet, generated WASM glue, Web Audio integration, and Canvas background
 - `public/`: Apache configuration and generated WASM input for Vite
 - `scripts/`: submodule setup, WASM build, complete build, and cleanup
 - `tests/`: native wrapper coverage for VGM/VGZ parsing and playback operations
@@ -111,7 +111,7 @@ The stop control returns to the beginning. Seeking works while playing or paused
 
 ## Audio architecture
 
-The UI creates one `AudioWorkletNode`, fetches the static WASM asset, and transfers its bytes once during initialization. The worklet loads the Emscripten ES module, instantiates WASM there without depending on `fetch` in the limited worklet global, owns the libvgm player handle, and performs all PCM rendering away from the UI thread. File parsing, VGZ decompression, sound-core initialization, metadata extraction, and seeking happen in worklet message handlers, never in `process()`. The callback renders the exact requested stereo frame count into preallocated float buffers. UI status/energy polling is independent of rendering, and volume changes use a per-block gain ramp.
+The UI creates one `AudioWorkletNode`, fetches the static WASM asset, and transfers its bytes once during initialization. Vite statically bundles the generated Emscripten module factory into the worklet; this avoids dynamic `import()`, which is not available in `WorkletGlobalScope`. The worklet instantiates WASM from the transferred bytes, owns the libvgm player handle, and performs all PCM rendering away from the UI thread. File parsing, VGZ decompression, sound-core initialization, metadata extraction, and seeking happen in worklet message handlers, never in `process()`. The callback renders the exact requested stereo frame count into preallocated float buffers. UI status/energy polling is independent of rendering, and volume changes use a per-block gain ramp.
 
 The C ABI in `wasm/vgm_web.h` supports multiple instances and exposes lifecycle, in-memory loading, transport, seek/timing, completion, volume/mute, fixed-block PCM rendering, metadata, chip details, missing external resources, and meaningful errors. No libvgm C++ object crosses the ABI.
 
@@ -161,4 +161,4 @@ If Apache hosting does not permit one of those directives, remove only the rejec
 - External ROM/sample companion files cannot yet be supplied; affected tracks are rejected with the resource name.
 - Browser output sample rate is selected by the browser. libvgm's resamplers convert every chip to that rate.
 - Browsers may suspend audio after backgrounding or device changes; pressing play resumes the context.
-- Direct WebAssembly loading in AudioWorklet is used because it is supported by the target current browsers. A browser that blocks module loading in AudioWorklet receives a fatal initialization message rather than falling back to deprecated `ScriptProcessorNode`.
+- WebAssembly is instantiated directly inside the AudioWorklet because it is supported by the target current browsers. A browser that blocks worklet or WASM initialization receives a fatal initialization message rather than falling back to deprecated `ScriptProcessorNode`.

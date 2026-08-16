@@ -1,5 +1,6 @@
+import createLibVgmModule from './generated/libvgm.js';
 import type { LoadedTrack, Metadata, SoundChip, WorkletRequest, WorkletResponse } from './types';
-import type { LibVgmModule, ModuleFactory } from './wasm-types';
+import type { LibVgmModule } from './wasm-types';
 
 const MAX_RENDER_FRAMES = 2048;
 const MISSING_RESOURCE = 9;
@@ -42,12 +43,10 @@ class LibVgmProcessor extends AudioWorkletProcessor {
     }
   }
 
-  private async initialize(moduleUrl: string, wasmBinary: ArrayBuffer, contextRate: number): Promise<void> {
+  private async initialize(wasmBinary: ArrayBuffer, contextRate: number): Promise<void> {
     try {
-      const imported = await import(/* @vite-ignore */ moduleUrl) as { default: ModuleFactory };
-      const baseUrl = new URL('.', moduleUrl);
-      this.module = await imported.default({
-        locateFile: (path: string) => new URL(path, baseUrl).href,
+      this.module = await createLibVgmModule({
+        locateFile: (path: string) => path,
         noInitialRun: true,
         wasmBinary: new Uint8Array(wasmBinary),
       });
@@ -153,7 +152,7 @@ class LibVgmProcessor extends AudioWorkletProcessor {
 
   private async handleMessage(message: WorkletRequest): Promise<void> {
     if (message.type === 'init') {
-      await this.initialize(message.wasmModuleUrl, message.wasmBinary, message.sampleRate);
+      await this.initialize(message.wasmBinary, message.sampleRate);
       return;
     }
     if (message.type === 'dispose') {

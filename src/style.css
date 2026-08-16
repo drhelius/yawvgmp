@@ -1,7 +1,7 @@
 :root {
   color-scheme: dark;
   --bg: #080b0d;
-  --panel: rgba(11, 16, 18, 0.94);
+  --panel: rgba(11, 16, 18, 0.82);
   --panel-solid: #0b1012;
   --line: #253337;
   --line-bright: #3e575b;
@@ -73,7 +73,7 @@ input:focus-visible {
   border-radius: 5px;
   background: var(--panel);
   box-shadow: 0 28px 85px rgba(0, 0, 0, 0.58), inset 0 1px rgba(255, 255, 255, 0.025);
-  backdrop-filter: blur(16px);
+  backdrop-filter: blur(7px);
 }
 
 .player-header,
@@ -97,13 +97,15 @@ input:focus-visible {
 
 .brand-mark {
   display: grid;
-  width: 27px;
+  min-width: 76px;
   height: 23px;
+  padding: 0 7px;
   place-items: center;
   border: 1px solid var(--cyan);
   color: var(--cyan);
   font-weight: 800;
-  letter-spacing: -0.08em;
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
 }
 
 .state {

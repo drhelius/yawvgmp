@@ -283,7 +283,7 @@ export function App() {
     return () => window.removeEventListener('keydown', keyboard);
   }, [changeVolume, dismissError, openFile, position, seek, state, toggleMute, togglePlay, volume]);
 
-  const title = track?.metadata.title || track?.metadata.titleJapanese || track?.filename || 'Browser VGM Player';
+  const title = track?.filename || 'NO FILE LOADED';
   const subtitle = [track?.metadata.game || track?.metadata.gameJapanese, track?.metadata.system || track?.metadata.systemJapanese]
     .filter(Boolean).join(' // ');
   const loading = state === 'loading-wasm' || state === 'loading-file';
@@ -296,9 +296,9 @@ export function App() {
       <main class="page-shell">
         <section class="player" aria-labelledby="track-title">
           <header class="player-header">
-            <div class="brand" aria-label="libvgm browser player">
-              <span class="brand-mark">LV</span>
-              <span>LIBVGM // WEB</span>
+            <div class="brand" aria-label="YAWVGMP, based on libvgm">
+              <span class="brand-mark">YAWVGMP</span>
+              <span>Based on libvgm</span>
             </div>
             <div class={`state state-${state}`} role="status" aria-live="polite">
               <span class="state-light" />
@@ -310,7 +310,7 @@ export function App() {
             <div class="track-icon"><FileAudio size={25} aria-hidden="true" /></div>
             <div class="track-copy">
               <h1 id="track-title" title={title}>{title}</h1>
-              <p title={subtitle}>{subtitle || (track ? 'VGM DATA STREAM' : 'LOCAL SIGNAL DECK')}</p>
+              {subtitle && <p title={subtitle}>{subtitle}</p>}
             </div>
             <button class="open-button" type="button" onClick={openFile} disabled={loading} title="Open VGM file">
               <FolderOpen size={18} aria-hidden="true" />

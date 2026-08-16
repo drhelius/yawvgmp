@@ -15,7 +15,7 @@ target_link_libraries(vgm-web PRIVATE vgm-player vgm-emu vgm-utils)
 set_target_properties(vgm-web PROPERTIES
 	OUTPUT_NAME "libvgm"
 	SUFFIX ".js"
-	RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/public/wasm"
+	RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/wasm-module"
 )
 
 target_compile_options(vgm-web PRIVATE -O3 -flto)

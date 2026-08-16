@@ -19,7 +19,6 @@ export class AudioEngine {
     });
     this.node.connect(this.context.destination);
     this.node.port.onmessage = (event: MessageEvent<WorkletResponse>) => onMessage(event.data);
-    const wasmModuleUrl = new URL('./wasm/libvgm.js', document.baseURI).href;
     const wasmUrl = new URL('./wasm/libvgm.wasm', document.baseURI).href;
     const response = await fetch(wasmUrl);
     if (!response.ok) {
@@ -28,7 +27,6 @@ export class AudioEngine {
     const wasmBinary = await response.arrayBuffer();
     this.send({
       type: 'init',
-      wasmModuleUrl,
       wasmBinary,
       sampleRate: this.context.sampleRate,
     }, [wasmBinary]);
