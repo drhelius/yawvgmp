@@ -53,7 +53,7 @@ git submodule update --init --recursive
 npm run setup
 ```
 
-The submodule is pinned to a reviewed libvgm commit from the `web-vgm-player` branch. That history includes the Atari Lynx Mikey timer counter/reset fixes. A normal build always uses the pinned commit, so it does not silently change when the remote branch advances.
+The submodule is pinned to a reviewed libvgm commit on `master`. That history includes the Atari Lynx Mikey timer counter/reset fixes. A normal build always uses the pinned commit, so it does not silently change when the remote branch advances.
 
 To deliberately use another local libvgm checkout, set an override before building:
 
