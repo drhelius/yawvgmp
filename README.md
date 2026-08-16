@@ -1,6 +1,8 @@
 # yawvgmp
 
-Yet Another Web VGM Player is a static browser VGM/VGZ player powered by [drhelius/libvgm](https://github.com/drhelius/libvgm). Music files are read locally, copied once into WebAssembly memory, and never uploaded or sent over the network. The deployed application needs no Node.js, server application, database, URL rewriting, or cross-origin isolation.
+> https://drhelius.com/yawvgmp/
+
+Yet Another Web VGM Player is a static browser VGM/VGZ player powered by [drhelius/libvgm](https://github.com/drhelius/libvgm) fork. Music files are read locally, copied once into WebAssembly memory, and never uploaded or sent over the network. The deployed application needs no Node.js, server application, database, URL rewriting, or cross-origin isolation.
 
 ## Formats and browser requirements
 
@@ -53,7 +55,7 @@ git submodule update --init --recursive
 npm run setup
 ```
 
-The submodule is pinned to a reviewed libvgm commit on `master`. That history includes the Atari Lynx Mikey timer counter/reset fixes. A normal build always uses the pinned commit, so it does not silently change when the remote branch advances.
+The submodule is pinned to a reviewed libvgm commit on `master`. A normal build always uses the pinned commit, so it does not silently change when the remote branch advances.
 
 To deliberately use another local libvgm checkout, set an override before building:
 
