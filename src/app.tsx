@@ -48,7 +48,6 @@ export function App() {
   const [position, setPosition] = useState(0);
   const [volume, setVolume] = useState(0.8);
   const [muted, setMuted] = useState(false);
-  const [energy, setEnergy] = useState(0);
   const [error, setError] = useState('');
   const [errorDetail, setErrorDetail] = useState('');
   const [engineStats, setEngineStats] = useState('');
@@ -70,7 +69,6 @@ export function App() {
         break;
       case 'state':
         setPosition(message.position);
-        setEnergy(message.energy);
         if (stateRef.current === 'loading-wasm' || stateRef.current === 'loading-file' ||
             stateRef.current === 'dragging' || ERROR_STATES.includes(stateRef.current)) {
           break;
@@ -292,7 +290,7 @@ export function App() {
 
   return (
     <>
-      <SignalBackground energy={energy} playing={state === 'playing'} />
+      <SignalBackground />
       <main class="page-shell">
         <section class="player" aria-labelledby="track-title">
           <header class="player-header">

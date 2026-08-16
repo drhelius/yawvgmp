@@ -39,5 +39,6 @@ fi
 cmake --build "$BUILD_DIR" --config Release --target vgm-web --parallel
 
 mkdir -p "$ROOT_DIR/src/generated" "$ROOT_DIR/public/wasm"
-cp "$BUILD_DIR/wasm-module/libvgm.js" "$ROOT_DIR/src/generated/libvgm.js"
+node "$ROOT_DIR/scripts/prepare-wasm-module.mjs" \
+	"$BUILD_DIR/wasm-module/libvgm.js" "$ROOT_DIR/src/generated/libvgm.js"
 cp "$BUILD_DIR/wasm-module/libvgm.wasm" "$ROOT_DIR/public/wasm/libvgm.wasm"

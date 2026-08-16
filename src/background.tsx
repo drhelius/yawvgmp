@@ -1,203 +1,224 @@
+import SimplexNoise from 'simplex-noise';
 import { useEffect, useRef } from 'preact/hooks';
 
-interface BackgroundProps {
-  energy: number;
-  playing: boolean;
+const PARTICLE_COUNT = 700;
+const PARTICLE_PROP_COUNT = 9;
+const RANGE_Y = 100;
+const BASE_TTL = 50;
+const RANGE_TTL = 150;
+const BASE_SPEED = 0.1;
+const RANGE_SPEED = 2;
+const BASE_RADIUS = 1;
+const RANGE_RADIUS = 4;
+const BASE_HUE = 38;
+const RANGE_HUE = 135;
+const NOISE_STEPS = 8;
+const X_OFFSET = 0.00125;
+const Y_OFFSET = 0.00125;
+const Z_OFFSET = 0.0005;
+const SPEED_SCALE = 0.72;
+const BACKGROUND_COLOR = 'hsla(195, 24%, 4%, 1)';
+const TAU = Math.PI * 2;
+
+function random(maximum: number): number {
+  return maximum * Math.random();
 }
 
-interface FlowParticle {
-  x: number;
-  y: number;
-  previousX: number;
-  previousY: number;
-  velocityX: number;
-  velocityY: number;
-  speed: number;
-  age: number;
-  lifetime: number;
-  color: number;
+function randomRange(range: number): number {
+  return range - random(2 * range);
 }
 
-const COLORS = ['96, 220, 203', '143, 216, 107', '237, 174, 78'];
+function lerp(first: number, second: number, speed: number): number {
+  return (1 - speed) * first + speed * second;
+}
 
-export function SignalBackground({ energy, playing }: BackgroundProps) {
+function fadeInOut(time: number, maximum: number): number {
+  const half = 0.5 * maximum;
+  return Math.abs((time + half) % maximum - half) / half;
+}
+
+export function SignalBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const energyRef = useRef(energy);
-  const playingRef = useRef(playing);
 
   useEffect(() => {
-    energyRef.current = energy;
-    playingRef.current = playing;
-  }, [energy, playing]);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (canvas === null) {
+    const screenCanvas = canvasRef.current;
+    if (screenCanvas === null) {
       return;
     }
-    const context = canvas.getContext('2d', { alpha: false });
-    if (context === null) {
-      return;
-    }
-    const trails = document.createElement('canvas');
-    const trailContext = trails.getContext('2d');
-    if (trailContext === null) {
+    const particleCanvas = document.createElement('canvas');
+    const particleContext = particleCanvas.getContext('2d');
+    const screenContext = screenCanvas.getContext('2d', { alpha: false });
+    if (particleContext === null || screenContext === null) {
       return;
     }
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     const lowPower = navigator.hardwareConcurrency !== undefined && navigator.hardwareConcurrency <= 4;
-    const particles: FlowParticle[] = [];
+    const simplex = new SimplexNoise();
+    let particleProperties = new Float32Array(PARTICLE_COUNT * PARTICLE_PROP_COUNT);
     let width = 0;
     let height = 0;
+    let centerY = 0;
+    let tick = 0;
     let animation = 0;
-    let lastTime = 0;
+    let lastFrame = 0;
     let hidden = document.hidden;
 
-    const resetParticle = (particle: FlowParticle, initial: boolean) => {
-      const bandCenter = height * 0.58;
-      const bandHeight = Math.min(260, Math.max(120, height * 0.38));
-      particle.x = initial ? Math.random() * width : -30;
-      particle.y = bandCenter + (Math.random() - 0.5) * bandHeight;
-      particle.previousX = particle.x - 1;
-      particle.previousY = particle.y;
-      particle.velocityX = 0.8;
-      particle.velocityY = 0;
-      particle.speed = 10 + Math.random() * 17;
-      particle.age = initial ? Math.random() * 18 : 0;
-      particle.lifetime = 22 + Math.random() * 30;
-      particle.color = Math.floor(Math.random() * COLORS.length);
+    const initializeParticle = (offset: number) => {
+      const x = random(width);
+      const y = centerY + randomRange(RANGE_Y);
+      const lifetime = BASE_TTL + random(RANGE_TTL);
+      const speed = (BASE_SPEED + random(RANGE_SPEED)) * SPEED_SCALE;
+      const radius = BASE_RADIUS + random(RANGE_RADIUS);
+      const hue = BASE_HUE + random(RANGE_HUE);
+      particleProperties.set([x, y, 0, 0, 0, lifetime, speed, radius, hue], offset);
     };
 
-    const clearTrails = () => {
-      trailContext.save();
-      trailContext.setTransform(1, 0, 0, 1, 0, 0);
-      trailContext.clearRect(0, 0, trails.width, trails.height);
-      trailContext.restore();
-    };
-
-    const compose = (activeEnergy: number) => {
-      context.fillStyle = '#080b0d';
-      context.fillRect(0, 0, width, height);
-      context.save();
-      context.globalCompositeOperation = 'lighter';
-      context.globalAlpha = 0.28 + activeEnergy * 0.14;
-      context.filter = lowPower ? 'blur(7px)' : 'blur(11px)';
-      context.drawImage(trails, 0, 0, width, height);
-      if (!lowPower) {
-        context.globalAlpha = 0.12 + activeEnergy * 0.08;
-        context.filter = 'blur(22px)';
-        context.drawImage(trails, 0, 0, width, height);
-      }
-      context.globalAlpha = 0.72;
-      context.filter = 'none';
-      context.drawImage(trails, 0, 0, width, height);
-      context.restore();
-    };
-
-    const advance = (elapsed: number, time: number, activeEnergy: number) => {
-      trailContext.save();
-      trailContext.globalCompositeOperation = 'destination-out';
-      trailContext.fillStyle = `rgba(0, 0, 0, ${Math.min(0.13, elapsed * 3.2)})`;
-      trailContext.fillRect(0, 0, width, height);
-      trailContext.restore();
-      trailContext.lineCap = 'round';
-      trailContext.lineWidth = 0.65 + activeEnergy * 0.55;
-
-      const flowTime = time * 0.000035;
-      for (const particle of particles) {
-        particle.previousX = particle.x;
-        particle.previousY = particle.y;
-        const angle =
-          Math.sin(particle.x * 0.0032 + flowTime * 1.4) * 1.15 +
-          Math.cos(particle.y * 0.0045 - flowTime) * 0.9 +
-          Math.sin((particle.x + particle.y) * 0.0016 + flowTime * 0.7) * 0.55;
-        const response = Math.min(1, elapsed * 2.8);
-        const targetX = 0.72 + Math.cos(angle) * 0.62;
-        const targetY = Math.sin(angle) * 0.78;
-        particle.velocityX += (targetX - particle.velocityX) * response;
-        particle.velocityY += (targetY - particle.velocityY) * response;
-        const playbackBoost = 1 + activeEnergy * 0.55;
-        particle.x += particle.velocityX * particle.speed * elapsed * playbackBoost;
-        particle.y += particle.velocityY * particle.speed * elapsed * playbackBoost;
-        particle.age += elapsed;
-
-        const lifeFade = Math.min(1, particle.age * 0.45) * Math.min(1, (particle.lifetime - particle.age) * 0.3);
-        trailContext.strokeStyle = `rgba(${COLORS[particle.color]}, ${0.19 * Math.max(0, lifeFade)})`;
-        trailContext.beginPath();
-        trailContext.moveTo(particle.previousX, particle.previousY);
-        trailContext.lineTo(particle.x, particle.y);
-        trailContext.stroke();
-
-        if (particle.age >= particle.lifetime || particle.x > width + 40 || particle.y < -40 || particle.y > height + 40) {
-          resetParticle(particle, false);
-        }
+    const initializeParticles = () => {
+      tick = 0;
+      const particleCount = reducedMotion.matches ? 160 : (lowPower ? 420 : PARTICLE_COUNT);
+      particleProperties = new Float32Array(particleCount * PARTICLE_PROP_COUNT);
+      for (let offset = 0; offset < particleProperties.length; offset += PARTICLE_PROP_COUNT) {
+        initializeParticle(offset);
       }
     };
 
-    const drawStatic = () => {
-      clearTrails();
-      for (let step = 0; step < 100; step += 1) {
-        advance(0.04, step * 40, 0);
+    const outOfBounds = (x: number, y: number): boolean => (
+      x > width || x < 0 || y > height || y < 0
+    );
+
+    const drawParticle = (
+      x: number,
+      y: number,
+      nextX: number,
+      nextY: number,
+      life: number,
+      lifetime: number,
+      radius: number,
+      hue: number,
+    ) => {
+      particleContext.save();
+      particleContext.lineCap = 'round';
+      particleContext.lineWidth = radius;
+      particleContext.strokeStyle = `hsla(${hue}, 100%, 60%, ${fadeInOut(life, lifetime)})`;
+      particleContext.beginPath();
+      particleContext.moveTo(x, y);
+      particleContext.lineTo(nextX, nextY);
+      particleContext.stroke();
+      particleContext.closePath();
+      particleContext.restore();
+    };
+
+    const updateParticle = (offset: number) => {
+      const xIndex = offset;
+      const yIndex = offset + 1;
+      const velocityXIndex = offset + 2;
+      const velocityYIndex = offset + 3;
+      const lifeIndex = offset + 4;
+      const lifetimeIndex = offset + 5;
+      const speedIndex = offset + 6;
+      const radiusIndex = offset + 7;
+      const hueIndex = offset + 8;
+      const x = particleProperties[xIndex];
+      const y = particleProperties[yIndex];
+      const noise = simplex.noise3D(x * X_OFFSET, y * Y_OFFSET, tick * Z_OFFSET) * NOISE_STEPS * TAU;
+      const velocityX = lerp(particleProperties[velocityXIndex], Math.cos(noise), 0.5);
+      const velocityY = lerp(particleProperties[velocityYIndex], Math.sin(noise), 0.5);
+      const life = particleProperties[lifeIndex];
+      const lifetime = particleProperties[lifetimeIndex];
+      const speed = particleProperties[speedIndex];
+      const nextX = x + velocityX * speed;
+      const nextY = y + velocityY * speed;
+
+      drawParticle(
+        x,
+        y,
+        nextX,
+        nextY,
+        life,
+        lifetime,
+        particleProperties[radiusIndex],
+        particleProperties[hueIndex],
+      );
+
+      particleProperties[xIndex] = nextX;
+      particleProperties[yIndex] = nextY;
+      particleProperties[velocityXIndex] = velocityX;
+      particleProperties[velocityYIndex] = velocityY;
+      particleProperties[lifeIndex] = life + 1;
+
+      if (outOfBounds(x, y) || life > lifetime) {
+        initializeParticle(offset);
       }
-      compose(0);
+    };
+
+    const drawParticles = () => {
+      for (let offset = 0; offset < particleProperties.length; offset += PARTICLE_PROP_COUNT) {
+        updateParticle(offset);
+      }
+    };
+
+    const renderGlow = () => {
+      screenContext.save();
+      screenContext.filter = 'blur(8px) brightness(200%)';
+      screenContext.globalCompositeOperation = 'lighter';
+      screenContext.drawImage(particleCanvas, 0, 0, width, height);
+      screenContext.restore();
+
+      screenContext.save();
+      screenContext.filter = 'blur(4px) brightness(200%)';
+      screenContext.globalCompositeOperation = 'lighter';
+      screenContext.drawImage(particleCanvas, 0, 0, width, height);
+      screenContext.restore();
+    };
+
+    const renderToScreen = () => {
+      screenContext.save();
+      screenContext.globalCompositeOperation = 'lighter';
+      screenContext.drawImage(particleCanvas, 0, 0, width, height);
+      screenContext.restore();
+    };
+
+    const renderFrame = () => {
+      tick += SPEED_SCALE;
+      particleContext.clearRect(0, 0, width, height);
+      screenContext.fillStyle = BACKGROUND_COLOR;
+      screenContext.fillRect(0, 0, width, height);
+      drawParticles();
+      renderGlow();
+      renderToScreen();
+    };
+
+    const draw = (time: number) => {
+      animation = requestAnimationFrame(draw);
+      if (hidden || reducedMotion.matches || time - lastFrame < 16) {
+        return;
+      }
+      lastFrame = time;
+      renderFrame();
     };
 
     const resize = () => {
       const ratio = Math.min(window.devicePixelRatio || 1, 2);
       width = window.innerWidth;
       height = window.innerHeight;
-      canvas.width = Math.round(width * ratio);
-      canvas.height = Math.round(height * ratio);
-      trails.width = canvas.width;
-      trails.height = canvas.height;
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
-      context.setTransform(ratio, 0, 0, ratio, 0, 0);
-      trailContext.setTransform(ratio, 0, 0, ratio, 0, 0);
-
-      const areaCount = Math.round(width * height / (lowPower ? 8_000 : 5_000));
-      const count = reducedMotion.matches ? 55 : Math.max(90, Math.min(lowPower ? 180 : 300, areaCount));
-      while (particles.length < count) {
-        particles.push({
-          x: 0,
-          y: 0,
-          previousX: 0,
-          previousY: 0,
-          velocityX: 0,
-          velocityY: 0,
-          speed: 0,
-          age: 0,
-          lifetime: 0,
-          color: 0,
-        });
-      }
-      particles.length = count;
-      for (const particle of particles) {
-        resetParticle(particle, true);
-      }
-      clearTrails();
-      if (reducedMotion.matches) {
-        drawStatic();
-      }
-    };
-
-    const draw = (time: number) => {
-      animation = requestAnimationFrame(draw);
-      if (hidden || reducedMotion.matches || time - lastTime < (lowPower ? 32 : 15)) {
-        return;
-      }
-      const elapsed = Math.min(0.05, (time - lastTime) / 1000 || 0.016);
-      lastTime = time;
-      const activeEnergy = playingRef.current ? energyRef.current : 0;
-      advance(elapsed, time, activeEnergy);
-      compose(activeEnergy);
+      centerY = 0.5 * height;
+      particleCanvas.width = Math.round(width * ratio);
+      particleCanvas.height = Math.round(height * ratio);
+      screenCanvas.width = particleCanvas.width;
+      screenCanvas.height = particleCanvas.height;
+      screenCanvas.style.width = `${width}px`;
+      screenCanvas.style.height = `${height}px`;
+      particleContext.setTransform(ratio, 0, 0, ratio, 0, 0);
+      screenContext.setTransform(ratio, 0, 0, ratio, 0, 0);
+      initializeParticles();
+      renderFrame();
     };
 
     const visibility = () => {
       hidden = document.hidden;
       if (!hidden) {
-        lastTime = performance.now();
+        lastFrame = performance.now();
       }
     };
 

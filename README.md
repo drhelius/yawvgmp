@@ -115,6 +115,10 @@ The UI creates one `AudioWorkletNode`, fetches the static WASM asset, and transf
 
 The C ABI in `wasm/vgm_web.h` supports multiple instances and exposes lifecycle, in-memory loading, transport, seek/timing, completion, volume/mute, fixed-block PCM rendering, metadata, chip details, missing external resources, and meaningful errors. No libvgm C++ object crosses the ABI.
 
+## Visual background credits
+
+The canvas background integrates the Swirl effect by Sean Free from Codrops' [Ambient Canvas Backgrounds](https://github.com/crnacura/AmbientCanvasBackgrounds), adapted to YAWVGMP's colors, speed, responsive layout, and reduced-motion behavior. It uses Jonas Wagner's MIT-licensed [SimplexNoise](https://github.com/jwagner/simplex-noise.js).
+
 ## External ROM and sample data
 
 Some chips can request data not embedded in the VGM, such as the YRW801 sample ROM used by some OPL4 tracks. The wrapper records the chip/resource request and blocks playback with an explanation rather than silently producing known-incomplete audio. No copyrighted ROM data is included. The callback boundary is intentionally retained for a future local companion-file picker.
