@@ -51,6 +51,7 @@ export function App() {
   const [error, setError] = useState('');
   const [errorDetail, setErrorDetail] = useState('');
   const [engineStats, setEngineStats] = useState('');
+  const [audioEngine, setAudioEngine] = useState<AudioEngine | null>(null);
 
   const handleEngineMessage = useCallback((message: WorkletResponse) => {
     switch (message.type) {
@@ -114,6 +115,7 @@ export function App() {
   useEffect(() => {
     const engine = new AudioEngine();
     engineRef.current = engine;
+    setAudioEngine(engine);
     engine.initialize(handleEngineMessage).catch((reason: unknown) => {
       setError(reason instanceof Error ? reason.message : 'Unable to initialize browser audio.');
       setState('browser-unsupported');
@@ -290,7 +292,7 @@ export function App() {
 
   return (
     <>
-      <SignalBackground />
+      <SignalBackground audioEngine={audioEngine} />
       <main class="page-shell">
         <section class="player" aria-labelledby="track-title">
           <header class="player-header">

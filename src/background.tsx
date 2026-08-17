@@ -1,8 +1,9 @@
 import SimplexNoise from 'simplex-noise';
 import { useEffect, useRef } from 'preact/hooks';
+import type { AudioEngine } from './audio-engine';
 
 const PARTICLE_COUNT = 700;
-const PARTICLE_PROP_COUNT = 9;
+const PARTICLE_PROP_COUNT = 11;
 const RANGE_Y = 100;
 const BASE_TTL = 50;
 const RANGE_TTL = 150;
@@ -19,6 +20,9 @@ const Z_OFFSET = 0.0005;
 const SPEED_SCALE = 0.72;
 const BACKGROUND_COLOR = 'hsla(195, 24%, 4%, 1)';
 const TAU = Math.PI * 2;
+const IMPULSE_DECAY = 0.72;
+const PEAK_COOLDOWN = 80;
+const IMPULSE_VELOCITY = 2.5;
 
 function random(maximum: number): number {
   return maximum * Math.random();
@@ -37,7 +41,11 @@ function fadeInOut(time: number, maximum: number): number {
   return Math.abs((time + half) % maximum - half) / half;
 }
 
-export function SignalBackground() {
+interface SignalBackgroundProps {
+  audioEngine: AudioEngine | null;
+}
+
+export function SignalBackground({ audioEngine }: SignalBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -62,7 +70,18 @@ export function SignalBackground() {
     let tick = 0;
     let animation = 0;
     let lastFrame = 0;
+    let lastPeak = 0;
     let hidden = document.hidden;
+    let audioLevelsReady = false;
+    let previousLow = 0;
+    let previousHigh = 0;
+    let lowMaximum = 0.000001;
+    let midMaximum = 0.000001;
+    let highMaximum = 0.000001;
+    let lowLevel = 0;
+    let midLevel = 0;
+    let highLevel = 0;
+    let colorPulse = 0;
 
     const initializeParticle = (offset: number) => {
       const x = random(width);
@@ -71,7 +90,7 @@ export function SignalBackground() {
       const speed = (BASE_SPEED + random(RANGE_SPEED)) * SPEED_SCALE;
       const radius = BASE_RADIUS + random(RANGE_RADIUS);
       const hue = BASE_HUE + random(RANGE_HUE);
-      particleProperties.set([x, y, 0, 0, 0, lifetime, speed, radius, hue], offset);
+      particleProperties.set([x, y, 0, 0, 0, lifetime, speed, radius, hue, 0, 0], offset);
     };
 
     const initializeParticles = () => {
@@ -96,11 +115,13 @@ export function SignalBackground() {
       lifetime: number,
       radius: number,
       hue: number,
+      impulse: number,
+      bandLevel: number,
     ) => {
       particleContext.save();
       particleContext.lineCap = 'round';
-      particleContext.lineWidth = radius;
-      particleContext.strokeStyle = `hsla(${hue}, 100%, 60%, ${fadeInOut(life, lifetime)})`;
+      particleContext.lineWidth = radius * (1 + impulse * 0.18 + bandLevel * 0.22);
+      particleContext.strokeStyle = `hsla(${hue + colorPulse * 22}, 100%, ${60 + colorPulse * 12}%, ${fadeInOut(life, lifetime)})`;
       particleContext.beginPath();
       particleContext.moveTo(x, y);
       particleContext.lineTo(nextX, nextY);
@@ -119,6 +140,8 @@ export function SignalBackground() {
       const speedIndex = offset + 6;
       const radiusIndex = offset + 7;
       const hueIndex = offset + 8;
+      const impulseIndex = offset + 9;
+      const impulseDirectionIndex = offset + 10;
       const x = particleProperties[xIndex];
       const y = particleProperties[yIndex];
       const noise = simplex.noise3D(x * X_OFFSET, y * Y_OFFSET, tick * Z_OFFSET) * NOISE_STEPS * TAU;
@@ -127,8 +150,15 @@ export function SignalBackground() {
       const life = particleProperties[lifeIndex];
       const lifetime = particleProperties[lifetimeIndex];
       const speed = particleProperties[speedIndex];
-      const nextX = x + velocityX * speed;
-      const nextY = y + velocityY * speed;
+      const impulse = particleProperties[impulseIndex];
+      const impulseDirection = particleProperties[impulseDirectionIndex];
+      const impulseVelocityX = Math.cos(impulseDirection) * impulse * IMPULSE_VELOCITY;
+      const impulseVelocityY = Math.sin(impulseDirection) * impulse * IMPULSE_VELOCITY;
+      const particleIndex = offset / PARTICLE_PROP_COUNT;
+      const bandLevel = particleIndex % 3 === 0 ? lowLevel : (particleIndex % 3 === 1 ? midLevel : highLevel);
+      const musicSpeed = 1 + lowLevel * 0.35 + bandLevel * 0.85;
+      const nextX = x + (velocityX + impulseVelocityX) * speed * musicSpeed;
+      const nextY = y + (velocityY + impulseVelocityY) * speed * musicSpeed;
 
       drawParticle(
         x,
@@ -139,6 +169,8 @@ export function SignalBackground() {
         lifetime,
         particleProperties[radiusIndex],
         particleProperties[hueIndex],
+        impulse,
+        bandLevel,
       );
 
       particleProperties[xIndex] = nextX;
@@ -146,6 +178,7 @@ export function SignalBackground() {
       particleProperties[velocityXIndex] = velocityX;
       particleProperties[velocityYIndex] = velocityY;
       particleProperties[lifeIndex] = life + 1;
+      particleProperties[impulseIndex] = impulse * IMPULSE_DECAY;
 
       if (outOfBounds(x, y) || life > lifetime) {
         initializeParticle(offset);
@@ -158,15 +191,88 @@ export function SignalBackground() {
       }
     };
 
+    const triggerImpulse = (strength: number, highFrequency: boolean) => {
+      for (let offset = 0; offset < particleProperties.length; offset += PARTICLE_PROP_COUNT) {
+        if (highFrequency && Math.random() > 0.45) {
+          continue;
+        }
+        particleProperties[offset + 9] = strength * (0.45 + random(0.55));
+        particleProperties[offset + 10] = random(TAU);
+      }
+    };
+
+    const updateMusicImpulse = (time: number) => {
+      if (audioEngine === null) {
+        lowLevel = lerp(lowLevel, 0, 0.3);
+        midLevel = lerp(midLevel, 0, 0.3);
+        highLevel = lerp(highLevel, 0, 0.3);
+        colorPulse *= IMPULSE_DECAY;
+        return;
+      }
+
+      const levels = audioEngine.getAudioLevels();
+      if (levels.low < 0.000001 && levels.mid < 0.000001 && levels.high < 0.000001) {
+        audioLevelsReady = false;
+        previousLow = 0;
+        previousHigh = 0;
+        lowMaximum = 0.000001;
+        midMaximum = 0.000001;
+        highMaximum = 0.000001;
+        lowLevel = lerp(lowLevel, 0, 0.3);
+        midLevel = lerp(midLevel, 0, 0.3);
+        highLevel = lerp(highLevel, 0, 0.3);
+        colorPulse *= IMPULSE_DECAY;
+        return;
+      }
+
+      lowMaximum = Math.max(levels.low, lowMaximum * 0.995);
+      midMaximum = Math.max(levels.mid, midMaximum * 0.995);
+      highMaximum = Math.max(levels.high, highMaximum * 0.995);
+      const lowTarget = Math.sqrt(levels.low / lowMaximum);
+      const midTarget = Math.sqrt(levels.mid / midMaximum);
+      const highTarget = Math.sqrt(levels.high / highMaximum);
+      if (!audioLevelsReady) {
+        lowLevel = lowTarget;
+        midLevel = midTarget;
+        highLevel = highTarget;
+        previousLow = lowLevel;
+        previousHigh = highLevel;
+        audioLevelsReady = true;
+        return;
+      }
+
+      lowLevel = lerp(lowLevel, lowTarget, lowTarget > lowLevel ? 0.55 : 0.3);
+      midLevel = lerp(midLevel, midTarget, midTarget > midLevel ? 0.5 : 0.28);
+      highLevel = lerp(highLevel, highTarget, highTarget > highLevel ? 0.5 : 0.32);
+      colorPulse *= IMPULSE_DECAY;
+
+      if (time - lastPeak >= PEAK_COOLDOWN) {
+        const lowRise = lowLevel - previousLow;
+        const highRise = highLevel - previousHigh;
+        if (lowRise > 0.06) {
+          triggerImpulse(0.65 + Math.min(1, lowRise * 5) * 1.35, false);
+          colorPulse = Math.max(colorPulse, Math.min(0.35, lowRise * 2));
+          lastPeak = time;
+        } else if (highRise > 0.09) {
+          triggerImpulse(0.45 + Math.min(1, highRise * 6) * 0.8, true);
+          colorPulse = Math.max(colorPulse, Math.min(1, 0.35 + highRise * 4));
+          lastPeak = time;
+        }
+      }
+
+      previousLow = lowLevel;
+      previousHigh = highLevel;
+    };
+
     const renderGlow = () => {
       screenContext.save();
-      screenContext.filter = 'blur(8px) brightness(200%)';
+      screenContext.filter = `blur(8px) brightness(${200 + colorPulse * 100}%)`;
       screenContext.globalCompositeOperation = 'lighter';
       screenContext.drawImage(particleCanvas, 0, 0, width, height);
       screenContext.restore();
 
       screenContext.save();
-      screenContext.filter = 'blur(4px) brightness(200%)';
+      screenContext.filter = `blur(4px) brightness(${200 + colorPulse * 100}%)`;
       screenContext.globalCompositeOperation = 'lighter';
       screenContext.drawImage(particleCanvas, 0, 0, width, height);
       screenContext.restore();
@@ -179,8 +285,9 @@ export function SignalBackground() {
       screenContext.restore();
     };
 
-    const renderFrame = () => {
+    const renderFrame = (time: number) => {
       tick += SPEED_SCALE;
+      updateMusicImpulse(time);
       particleContext.clearRect(0, 0, width, height);
       screenContext.fillStyle = BACKGROUND_COLOR;
       screenContext.fillRect(0, 0, width, height);
@@ -195,7 +302,7 @@ export function SignalBackground() {
         return;
       }
       lastFrame = time;
-      renderFrame();
+      renderFrame(time);
     };
 
     const resize = () => {
@@ -212,7 +319,7 @@ export function SignalBackground() {
       particleContext.setTransform(ratio, 0, 0, ratio, 0, 0);
       screenContext.setTransform(ratio, 0, 0, ratio, 0, 0);
       initializeParticles();
-      renderFrame();
+      renderFrame(performance.now());
     };
 
     const visibility = () => {
@@ -233,7 +340,7 @@ export function SignalBackground() {
       document.removeEventListener('visibilitychange', visibility);
       reducedMotion.removeEventListener('change', resize);
     };
-  }, []);
+  }, [audioEngine]);
 
   return <canvas ref={canvasRef} class="signal-background" aria-hidden="true" />;
 }
