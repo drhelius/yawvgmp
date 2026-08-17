@@ -417,7 +417,7 @@ export function App() {
           </div>
 
           <footer class="player-footer">
-            <span>Yet Another Web VGM Player</span>
+            <a class="brand-link" href="https://github.com/drhelius/yawvgmp" target="_blank" rel="noopener noreferrer">Yet Another Web VGM Player</a>
             <span>{engineStats || 'WASM AUDIO ENGINE'}</span>
           </footer>
         </section>

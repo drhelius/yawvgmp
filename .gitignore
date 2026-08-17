@@ -2,3 +2,5 @@ node_modules/
 build/
 .vite/
 docs/
+/dist/
+*.DS_Store
