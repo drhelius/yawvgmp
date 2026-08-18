@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_NO_PACKAGE_REGISTRY ON)
 
-set(YAWVGMP_LIBVGM_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libvgm" CACHE PATH "Path to a drhelius/libvgm checkout")
+set(YAWVGMP_LIBVGM_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libvgm" CACHE PATH "Path to a libvgm checkout")
 option(YAWVGMP_BUILD_TESTS "Build native tests for the browser wrapper" OFF)
 
 set(BUILD_LIBAUDIO OFF CACHE BOOL "" FORCE)

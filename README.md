@@ -6,7 +6,7 @@ https://drhelius.com/yawvgmp/
 
 ---
 
-Yet Another Web VGM Player is a static browser VGM/VGZ player powered by [drhelius/libvgm](https://github.com/drhelius/libvgm) fork. Music files are read locally, copied once into WebAssembly memory, and never uploaded or sent over the network. The deployed application needs no Node.js, server application, database, URL rewriting, or cross-origin isolation.
+Yet Another Web VGM Player is a static browser VGM/VGZ player powered by [libvgm](https://github.com/ValleyBell/libvgm). Music files are read locally, copied once into WebAssembly memory, and never uploaded or sent over the network. The deployed application needs no Node.js, server application, database, URL rewriting, or cross-origin isolation.
 
 ## Formats and browser requirements
 

@@ -1,4 +1,4 @@
 [submodule "libvgm"]
 	path = libvgm
-	url = https://github.com/drhelius/libvgm.git
+	url = https://github.com/ValleyBell/libvgm.git
 	branch = master
