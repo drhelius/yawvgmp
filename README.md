@@ -8,6 +8,9 @@ https://drhelius.com/yawvgmp/
 
 Yet Another Web VGM Player is a static browser VGM/VGZ player powered by [libvgm](https://github.com/ValleyBell/libvgm). Music files are read locally, copied once into WebAssembly memory, and never uploaded or sent over the network. The deployed application needs no Node.js, server application, database, URL rewriting, or cross-origin isolation.
 
+<img src="https://github.com/user-attachments/assets/243aff17-d842-4023-9f95-1db4c8378efe" />
+
+
 ## Formats and browser requirements
 
 The player accepts `.vgm` and gzip-compressed `.vgz` files. The WebAssembly build includes the VGM parser and command processor, in-memory raw/gzip loading, resampling and mixing, GD3 metadata, and every sound device/core enabled by `SNDEMU__ALL`, including the C++14-based YM2414 ymfm core. Native audio drivers, command-line applications, file loading, threading, and platform audio/windowing code are not linked into the browser module.
